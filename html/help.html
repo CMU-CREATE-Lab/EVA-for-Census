@@ -1,0 +1,414 @@
+<div class="container-fluid">
+
+  <div class="row">
+    <div class="col-md-12 text-justify">
+      <h1>What is EVA?</h1>
+      <p>
+      <strong>E</strong>xplorable <strong>V</strong>isual <strong>A</strong>nalytics or <strong>EVA</strong> is a web application for visualizing and exploring large and complex datasets. Using your browser, EVA lets you navigate through terabytes of data, consisting of hundreds of dimensions. You can then build simple map-based representations or complex abstract 5-dimensional projections of your data. You can then bookmark your favorite views and share your story via a simple link. A series of <a href="https://vimeo.com/channels/eva" target="_blank">videos</a> demonstrate EVA in action.
+      
+      </p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+    <h1>Using EVA</h1>
+    </div>
+    <div class="col-md-6 text-justify">
+      <p>
+        EVA is preloaded with the LEHD dataset. <strong>L</strong>ongitudinal <strong>E</strong>mployer-<strong>H</strong>ousehold <strong>D</strong>ynamics is a large dataset provided by the Center for Economic Studies at the U.S. Census Bureau. It has in-depth information about the job market, such as number of jobs in various sectors or the demographics of workforce in each neighborhood. You can access the raw data at <a href="http://lehd.ces.census.gov/" target="_blank">http://lehd.ces.census.gov/</a>.
+      </p>
+      <p>
+        When you first load EVA, you will see a visualization of income distribution across the United States. In the following sections, you will learn how to interact with EVA, build your story based on the data, and even explore other aspects of the LEHD dataset by creating your own advanced visualizations.
+      </p>
+    </div>
+    <div class="col-md-6 text-center">
+      <p><img src="resources/images/homepage-screenshot.png" class="img-thumbnail" alt="EVA's Homepage"></p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12">
+    <h2>Basics</h2>
+    <h3>Navigation</h3>
+    </div>
+    <div class="col-md-6 text-justify">
+    <p>
+      The best way to navigate in EVA is to use a mouse. For example, hold the left mouse button and move the mouse. This will drag the view. You can also use the mouse scroller to zoom in and out. Holding the right mouse button and moving the mouse will rotate the view.
+    </p>
+    </div>
+    <div class="col-md-6">
+    <table class="table table-striped">
+      <tr>
+        <th>Action</th>
+        <th>Function</th>
+      </tr>
+      <tr>
+        <td>Drag</td>
+        <td><kbd>Left Click + Move</kbd></td>
+      </tr>
+      <tr>
+        <td>Rotate</td>
+        <td><kbd>Right Click + Move</kbd></td>
+      </tr>
+      <tr>
+        <td>Zoom in and out</td>
+        <td><kbd>Scroll</kbd></td>
+      </tr>
+    </table>
+    </div>
+
+    <div class="col-md-6 text-justify">
+    <p>
+      When you load EVA for the first time, it shows a visualization of income distribution. Use your mouse and zoom in on New York. As you zoom in, the resolution of the visualization increases automatically. This allows you to see a detailed view of income inequality.
+    </p>
+    </div>
+    <div class="col-md-6 text-center">
+      <p><img src="resources/images/zoom-in-newyork.jpg" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+    <h3>Progress Bar</h3>
+    </div>
+    <div class="col-md-10 text-justify">
+    <p>
+      For working with very large datasets, EVA needs to build various summarizations of the data. When you are zoomed out and looking at all the data, EVA shows you a lower resolution version of it. When you zoom in, EVA downloads a higher resolution version of the data for that specific region. The progress bar shows whether such a download is in progress, and if so, how much of it remains. When the download is finished, EVA replaces the low resolution view with a higher resolution one.
+    </p>
+    
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/download-progress-bar.jpg" class="img-thumbnail"></p>
+    </div>
+    <div class="col-md-12 text-justify">
+    <p>
+      You can also see the current level of detail. For example, <code>TRACT</code> means each visualized point on the map is the center of a Census Tract. If you zoom in more, this will change to the higher resolution of <code>BLOCK</code>, which means each point is the center of a Census Block.
+    </p>
+    </div>
+
+    <div class="col-md-12">
+    <h3>Color Settings</h3>
+    </div>
+    <div class="col-md-8 text-justify">
+    <p>
+      The <code>COLOR</code> section helps you change the color assignment. When you load EVA, colors are pre-assigned to the percentage of people with income more than $3,333 per month. The color slider helps you define how various colors should be distributed. For example, in the image shown here, any neighborhood where 60% or more of its population has high income jobs would be colored as purple. On the other hand, if in a neighborhood 22% or less of its residents are earning less than $3,333 per month, it will be colored as green.
+    </p>
+    <p>
+      The color legend on the bottom shows how the percentages between 22% and 60% are assigned to various colors. You can play with the color slider and change its color distribution. This can be helpful in finding meaningful patterns in the data.
+    </p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p><img src="resources/images/color-settings.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+    <h3>Color Palettes</h3>
+    </div>
+    <div class="col-md-6 text-justify">
+    <p>
+      Clicking on the palette button brings up the <code>COLOR PALETTES</code> panel. You can now click on any color distribution that you like and it will then be assigned to your visualization.
+    </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/palette-button.png" class="img-thumbnail"></p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p><img src="resources/images/color-palettes.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+    <h3>Time Slider</h3>
+    </div>
+    <div class="col-md-7 text-justify">
+    <p>
+      Use the time slider to navigate through time. The LEHD dataset is from 2002 to 2011. By clicking on the <span class="glyphicon glyphicon-play"></span> button, EVA will continuously play over time.
+    </p>
+    </div>
+    <div class="col-md-5 text-center">
+      <p><img src="resources/images/time-slider.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+    <h3>Search</h3>
+    </div>
+    <div class="col-md-5 text-justify">
+    <p>
+      When on a map, you can search for an address. Click on the search button, then type your address and press <kbd>enter</kbd>. EVA will jump to that address on the map.
+    </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/search-button.png" class="img-thumbnail"></p>
+    </div>
+    <div class="col-md-5 text-center">
+      <p><img src="resources/images/search-panel.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+    <h3>Dimension Selection</h3>
+    </div>
+    <div class="col-md-6 text-justify">
+    <p>
+      One of the main features of EVA is that you can browse through all available dimensions in your dataset and assign them to your desired visual dimension. Let's see how this works in action. On the color settings, click on <span class="glyphicon glyphicon-chevron-right"></span>. This will bring up the <code>DATA DIMENSIONS</code> panel. Here, you can see the complete list of available dimensions in your dataset. Let's click on a different dimension, say <code>10 - %j earn $1K/m-$3K/m</code>. This will reassign the colors to people who earn between $1,251 to $3,333 per month. Using the dimension reassignment capability, you can look at various attributes of the data and see how they are distributed over the map.
+    </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/dimension-button.png" class="img-thumbnail"></p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p><img src="resources/images/data-dimensions-panel.png" class="img-thumbnail"></p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12 text-justify">
+      <h2>Storytelling</h2>
+      <p>
+        EVA provides an easy way to share your discoveries with others. You can bookmark any number of views you find interesting and share it simply by sending a link. By sharing this link, you can tell the <em>story</em> of your data exploration to others. They will see exactly the same views that you have shared with them and furthermore, this is not static, and at any point they can join in on the exploration and start using the tool and make their own discoveries. 
+      </p>
+    </div>
+    
+    <div class="col-md-12">
+      <h3>Bookmarking</h3> 
+    </div>
+
+    <div class="col-md-10 text-justify">
+      <p>
+        To bookmark a view, simply use the bookmark button (with <i class="fa fa-star fa-lg"></i> icon). This button is located both on the right side of the time slider and also on top of the <code>TOOLS</code> panel, under <code>BOOKMARKS</code>. 
+      </p>
+    </div>
+
+    <div class="col-md-2 text-center">
+      <p>
+        <img src="resources/images/bookmark-button.png" class="img-thumbnail">
+      </p>
+    </div>
+    
+    <div class="col-md-12">
+      <h3>Sharing</h3> 
+    </div>
+
+    <div class="col-md-10 text-justify">
+      <p>
+        To share your bookmarks, use the share button (with <i class="fa fa-share-alt fa-lg"></i> icon). This button is located under the <code>TOOLS</code> panel, under <code>BOOKMARKS</code>. This will popup a window with a shareable link. 
+      </p>
+    </div>
+
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/share-button.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-6 text-justify">
+      <p>
+        You can copy this link and send it to anyone. Also you can use the <code>COPY</code> button to copy it to the clipboard (not supported on Firefox).
+      </p>
+    </div>
+    <div class="col-md-6 text-center">
+      <p><img src="resources/images/share-url.png" class="img-thumbnail"></p>
+    </div>
+    
+    <div class="col-md-12">
+      <h3>Deleting</h3> 
+    </div>
+    
+    
+    <div class="col-md-7 text-justify">
+      <p>
+        To delete only a single bookmark use the <i class="fa fa-times fa-lg"></i> icon on the bookmark image to remove only that bookmark. This button is located on top right corner of each bookmark snapshot in the list under the <code>TOOLS</code> panel, under the <code>BOOKMARKS</code> section. 
+      </p>
+      <p>
+        To delete <strong>all</strong> of your bookmarks, simply use the trash button (with <i class="fa fa-trash fa-lg"></i> icon). This button is located under the <code>TOOLS</code> panel, under <code>BOOKMARKS</code>. 
+      </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p>
+      <img src="resources/images/trash-button.png" class="img-thumbnail">
+      </p>
+    </div>
+    <div class="col-md-3 text-center">
+      <p>
+      <img src="resources/images/bookmark.png" class="img-thumbnail">
+      </p>
+    </div>
+    
+    <div class="col-md-12">
+      <h3>Screenshot</h3> 
+    </div>
+    
+    <div class="col-md-6 text-justify">
+      <p>
+      To take a screenshot of the visualization, use the screenshot button (with <i class="fa fa-camera fa-lg"></i> icon). This button is located under the <code>TOOLS</code> panel, under the <code>HELPERS</code> section. This will pop up a window with the screenshot. Right click on the image and save it or use the save button to download the screenshot.
+      </p>
+    </div>
+
+    <div class="col-md-2 text-center">
+      <img src="resources/images/screenshot-button.png" class="img-thumbnail">
+    </div>
+    
+    
+    <div class="col-md-4">
+      <p>
+       <img src="resources/images/screenshot.png" class="img-thumbnail" alt="EVA's Homepage">
+      </p>
+    </div>
+    
+  </div>
+
+  <div class="row">
+    
+    <div class="col-md-12">
+    <h2>Advanced Features</h2>
+    </div>
+    
+    <div class="col-md-12">
+      <h3>3D Map</h3>
+    </div>
+    <div class="col-md-8 text-justify">
+      <p>
+        In EVA, unlike typical geographical platforms, you can interact with the data over a 3D map. You can assign any of the data dimensions to the <code>Z AXIS</code> and get a 3D view of the data. To rotate the map, press and hold down the right mouse button and move the mouse. 
+      </p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p>
+       <img src="resources/images/3d-map.png" class="img-thumbnail">
+      </p>
+    </div>
+
+
+    <div class="col-md-12">
+      <h3>Camera Orientation</h3>
+    </div>
+    <div class="col-md-8 text-justify">
+      <p>
+        If you want to look at the map from a certain viewpoint (e.g., perpendicular to XY plane) or if you want to quickly reorient the map you can use the <code>LOOK AT</code> buttons. For example, in order to look at the map from the top (normal map view), click on the <code>XY</code> button.
+      </p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p>
+       <img src="resources/images/lookat-buttons.png" class="img-thumbnail">
+      </p>
+    </div>
+
+    <div class="col-md-12">
+      <h3>Map Layer</h3>
+    </div>
+    <div class="col-md-6 text-justify">
+      <p>
+        You can disable the map layer via the map button (with <i class="fa fa-globe fa-lg"></i> icon). This button is located under the <code>TOOLS</code> panel, under the <code>HELPERS</code> section. This removes the map layer under the data. 
+      </p>
+      <p>
+        Furthermore, while in the map mode, you are not allowed to change the X and Y axis from longitude and latitude. However, after disabling the map mode, you can assign any of the data dimensions to the X or Y dimensions. 
+      </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p>
+       <img src="resources/images/map-button.png" class="img-thumbnail">
+      </p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p>
+       <img src="resources/images/no-map.png" class="img-thumbnail">
+      </p>
+    </div>
+
+    <div class="col-md-12">
+      <h3>Data Source</h3>
+    </div>
+    <div class="col-md-8 text-justify">
+      <p>
+        EVA is preloaded with the LEHD dataset. By default, we load the <strong>R</strong>esidence <strong>A</strong>rea <strong>C</strong>haracteristics <strong>(RAC)</strong> dataset. You can also use the <strong>W</strong>ork <strong>A</strong>rea <strong>C</strong>haracteristics <strong>(RAC)</strong> dataset. More datasets will be added in the future.
+      </p>
+      <br>
+      <h4>Non-map Assignments</h4>
+      <p>
+        Furthermore, you can assign any of <code>X AXIS</code>, <code>Y AXIS</code>, <code>Z AXIS</code>, and <code>COLOR AXIS</code> to any of the dimensions of the data and get a non-geographical view. 
+      </p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p>
+       <img src="resources/images/non-map.png" class="img-thumbnail">
+      </p>
+    </div>
+
+    <div class="col-md-12">
+      <h3>Axis Helper</h3>
+    </div>
+    <div class="col-md-6 text-justify">
+      <p>
+        Click on the axis button (with <img src="css/icons/axis.svg" class="img-thumbnail" style="width:25px; height: 25px;"> icon) to activate the axis helper (Note: this only works if you are not in the map mode). This will show you 3 axis lines originating from the center of coordinates, showing the direction of X, Y and Z axes. This can be helpful when you are building complex 3D visualizations.
+      </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/axis-button.png" class="img-thumbnail"></p>
+    </div>
+    <div class="col-md-4 text-center">
+      <p><img src="resources/images/axes.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+      <h3>Grid Helper</h3>
+    </div>
+    <div class="col-md-5 text-justify">
+      <p>
+        To better understand the values for each axis, you can activate the grid helper by clicking on the grid button (with <img src="css/icons/grid.png" class="img-thumbnail" style="width:25px; height: 25px;"> icon). Note that this only works if you are not in the map mode. This will show a set of grids on the XY, YZ and ZX planes and will also show the corresponding values for each grid line. 
+        </p>
+        <p>
+        Using these lines and numbers, you can tell what is the value of each data point on each data dimension (for colors, you look at the color legend on the bottom of the <code>VISUALIZATION</code> panel). You can also play with scale sliders (located under the X, Y, Z and Color selectors) to shrink or expand the visualization on that specific axis. The numbers on the grid will update to show the new value of each corresponding line.
+      </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/grid-button.png" class="img-thumbnail"></p>
+    </div>
+    <div class="col-md-5 text-center">
+      <p><img src="resources/images/grid.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+      <h3>Hiding Panels</h3>
+    </div>
+    <div class="col-md-10">
+      <p>
+        When you only want to focus on the data and do not wish to change any of the controls, you can use the controls button <i class="fa fa-sliders fa-lg"></i> to hide the <code>VISUALIZATION</code> and <code>TOOLS</code> panels. This will give you less clutter and more space for viewing your visualization. Click on the button again to bring back all the panels.
+      </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/hide-button.png" class="img-thumbnail"></p>
+    </div>
+
+    <div class="col-md-12">
+      <h3>Streaming Lock</h3>
+    </div>
+    <div class="col-md-5 text-justify">
+      <p>
+        When you zoom in on a particular region, EVA downloads very high resolution data for that region. It is not possible nor desired to load the data at this resolution when you are zoomed out and viewing large areas of the country, therefore, when you zoom out, EVA reverts back to lower resolution data to support the whole large region. 
+        </p>
+        <p>
+        However, sometimes you may want to keep the data in a particular region at the highest resolution and then zoom out for a better overview (especially when viewing in 3D and at an angle). In that case, you can use the lock button (with <i class="fa fa-lock fa-lg"></i> icon) to keep the data for that region locked. When the stream is locked and you zoom out, EVA no longer tries to load any new data or change the data resolution until you unlock <i class="fa fa-unlock-alt fa-lg"></i> the stream again. 
+      </p>
+    </div>
+    <div class="col-md-2 text-center">
+      <p><img src="resources/images/stream-button.png" class="img-thumbnail"></p>
+    </div>
+    <div class="col-md-5 text-center">
+      <p><img src="resources/images/stream-example.png" class="img-thumbnail"></p>
+    </div>
+
+  </div>
+
+  <div class="row">
+    <div class="col-md-12 text-justify">
+    <h1>Team</h1>
+    <p>
+      EVA was developed at the <a href="http://www.cmucreatelab.org/" target="_blank">CREATE Lab</a> at Carnegie Mellon University. The main developers behind EVA are <a href="http://eva.cmucreatelab.org/saman" target="_blank">Saman Amraii</a> and <a href="http://eva.cmucreatelab.org/amir" target="_blank">Amir Yahyavi</a>. You can download EVA's code from the <i class="fa fa-github fa-lg"></i> <a href="https://github.com/CMU-CREATE-Lab/EVA-for-Census" target="_blank">GitHub Repository</a>. You can reach us at <a href="mailto:eva@cmucreatelab.org" target="_blank">eva@cmucreatelab.org</a>. We always welcome new collaborations and ideas. 
+    </p>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-12 text-justify">
+    <h1>Credits</h1>
+    <p>
+      Map tiles by <a href="http://cartodb.com/attributions#basemaps" target="_blank">CartoDB</a>, under <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank">CC BY 3.0</a>. Data by <a href="http://www.openstreetmap.org/" target="_blank">OpenStreetMap</a>, under ODbL. Several icons from Font Awesome by Dave Gandy - <a href="http://fontawesome.io" title="Font Awesome" target="_blank">http://fontawesome.io</a>. Grid icon made by <a href="http://www.flaticon.com/authors/balraj-chana" title="Balraj Chana" target="_blank">Balraj Chana</a>, axis icon made by <a href="http://www.flaticon.com/authors/freepik" title="Freepik" target="_blank">Freepik</a>, palette icon made by <a href="http://www.flaticon.com/authors/google" title="Google" target="_blank">Google</a> from <a href="http://www.flaticon.com" title="Flaticon" target="_blank">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC BY 3.0</a>. Built using <a href="http://getbootstrap.com/" title="Bootstrap Framework" target="_blank">Bootstrap</a> framework. 
+    </p>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,3 @@
+The Explorable Visual Analytics (EVA) software is copyright Carnegie Mellon University.
+
+You may use the software as-is for free, as long as you do not re-sell it. You may also modify and redistribute the source code for non-commercial use under the terms of the GNU General Public License v2. Corporations or anyone wishing to use it under other licensing terms must contact us at info@cmucreatelab.org.

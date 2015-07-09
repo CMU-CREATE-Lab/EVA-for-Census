@@ -1,0 +1,7 @@
+{
+  "datasets": [
+  {"path": "/resources/data/census/", "filename": "rac_main.json", "dataname": "Residence Area Characteristics"},
+  {"path": "/resources/data/census/", "filename": "wac_main.json", "dataname": "Workplace Area Characteristics"}
+  ],
+  "defaultView":"history-1434478643507-NyNIPItU"
+}

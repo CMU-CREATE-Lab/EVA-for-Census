@@ -1,0 +1,16 @@
+{
+  "name": "EVA",
+  "version": "0.2.0",
+  "dependencies": {
+    "express": "4.x",
+    "hashmap": "2.0.3",
+    "line-reader": "0.2.4",
+    "compression": "1.4.4",
+    "body-parser": "1.12.4",
+    "shortid": "2.2.2"
+  },
+  "engines": {
+    "node": "0.12.x",
+    "npm": "2.x.x"
+  }
+}

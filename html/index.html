@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>EVA - Explorable Visual Analytics</title>
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/jquery-ui.min.css" rel="stylesheet">
+  <link href="css/font-awesome.min.css" rel="stylesheet">
+  <link href="css/main.css" rel="stylesheet">
+  <link rel="icon" href="css/favicon.ico" type="image/x-icon">
+  <link rel="shortcut icon" href="css/favicon.ico" type="image/x-icon">
+  <script src="js/jquery-2.1.4.min.js"></script>
+  <script src="js/jquery-ui.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/modernizr.min.js"></script>
+  <script src="js/three.min.js"></script>
+  <script src="js/async.min.js"></script>
+  <script src="js/vis.js"></script>
+  <script src="js/TrackballControls.js"></script>
+  <script src="js/OrthographicTrackballControls.js"></script>
+  <script src="js/stats.min.js"></script>
+  <script src="js/Detector.js"></script>
+  <script src="js/pouchdb-3.6.0.min.js"></script>
+  <script src="js/pako.min.js"></script>
+  <script src="js/blob-util.min.js"></script>
+  <script src="js/dm.js"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true"></script>
+  <script>
+    // google analytics
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+    ga('create', 'UA-51767927-1', 'cmucreatelab.org');
+    ga('send', 'pageview');
+    
+    // get a list of url parameters
+    $.urlParam = function (name) {
+      var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+      if (results == null) {
+         return null;
+      }
+      else {
+         return results[1] || 0;
+      }
+    }
+
+    // ui variables
+    var ui_params = {};
+    function getUI_Params () {
+      return $.extend({}, ui_params);
+    }
+
+    var dataLoaded = false, datasets = [], mainMetaData = {};
+
+    // controller for all ui sliders
+    function setSliderValues (params) {
+      // params: scale_x, scale_y, scale_z, point_radius, time_slider
+      if (params && params.scale_x !== undefined) {
+        $("#ui-slider-scale-x").slider("value", params.scale_x);
+        ui_params.scale_x = params.scale_x;
+      }
+
+      if (params && params.scale_y !== undefined) {
+        $("#ui-slider-scale-y").slider("value", params.scale_y);
+        ui_params.scale_y = params.scale_y;
+      }
+
+      if (params && params.scale_z !== undefined) {
+        $("#ui-slider-scale-z").slider("value", params.scale_z);
+        ui_params.scale_z = params.scale_z;
+      }
+
+      if (params && params.point_radius !== undefined) {
+        $("#ui-slider-radius").slider("value", params.point_radius);
+        ui_params.point_radius = params.point_radius;
+      }
+
+      if (ui_params && ui_params.time_map && ui_params.time_map == -1) {
+        params.time_slider = 0;
+      }
+      if (params && params.time_slider !== undefined) {
+        $("#ui-slider-time").slider("value", params.time_slider);
+        ui_params.time_slider = params.time_slider;
+      }
+    };
+
+    // set of available palettes
+    var colorPalette = [
+      [[165,0,38],[215,48,39],[244,109,67],[253,174,97],[254,224,144],[255,255,191],[224,243,248],[171,217,233],[116,173,209],[69,117,180],[49,54,149]],
+      [[165,0,38],[215,48,39],[244,109,67],[253,174,97],[254,224,139],[255,255,191],[217,239,139],[166,217,106],[102,189,99],[26,152,80],[0,104,55]],
+      [[64,0,75],[118,42,131],[153,112,171],[194,165,207],[231,212,232],[247,247,247],[217,240,211],[166,219,160],[90,174,97],[27,120,55],[0,68,27]],
+      [[142,1,82],[197,27,125],[222,119,174],[241,182,218],[253,224,239],[247,247,247],[230,245,208],[184,225,134],[127,188,65],[77,146,33],[39,100,25]],
+      [[166,206,227],[31,120,180],[178,223,138],[51,160,44],[251,154,153],[227,26,28],[253,191,111],[255,127,0],[202,178,214],[106,61,154],[255,255,153],[177,89,40]],
+      [[255,255,217],[237,248,177],[199,233,180],[127,205,187],[65,182,196],[29,145,192],[34,94,168],[37,52,148],[8,29,88]],
+      [[255,255,255],[240,240,240],[217,217,217],[189,189,189],[150,150,150],[115,115,115],[82,82,82],[37,37,37],[0,0,0]],
+      [[247,252,253],[229,245,249],[204,236,230],[153,216,201],[102,194,164],[65,174,118],[35,139,69],[0,109,44],[0,68,27]],
+      [[255,255,204],[255,237,160],[254,217,118],[254,178,76],[253,141,60],[252,78,42],[227,26,28],[189,0,38],[128,0,38]]
+    ];
+
+    // controller for color palette parameters
+    function setColorValues (params) {
+      // params: palette_index, palette_minC, palette_midC, palette_maxC
+      if (!isNaN(parseFloat(params.palette_index)) && isFinite(params.palette_index)) {
+        ui_params.palette_index = params.palette_index;
+      }
+
+      if (!isNaN(parseFloat(params.palette_minC)) && isFinite(params.palette_minC)) {
+        ui_params.palette_minC = params.palette_minC;
+      }
+
+      if (!isNaN(parseFloat(params.palette_midC)) && isFinite(params.palette_midC)) {
+        ui_params.palette_midC = params.palette_midC;
+      }
+
+      if (!isNaN(parseFloat(params.palette_maxC)) && isFinite(params.palette_maxC)) {
+        ui_params.palette_maxC = params.palette_maxC;
+      }
+
+      // update handle positions on palette slider
+      $("#ui-slider-palette").slider("values", 0, ui_params.palette_minC);
+      $("#ui-slider-palette").slider("values", 1, ui_params.palette_maxC);
+
+      // update main palette
+      var lW = 2 * $("#ui-slider-palette").width() - $("#ui-slider-palette").innerWidth(), lH = 15, bars = 100;
+      var newHTML = '<svg style="position: absolute; margin: 0px; padding: 0px" width="' + (lW+1) + '" height="' + lH + '"> ';
+      var cW = lW / bars;
+      for (var i = 0; i < bars; i++) {
+        newHTML += '<rect fill="rgb(' + Math.round(palette2color(i/bars, 0) * 0xff) + ',' + Math.round(palette2color(i/bars, 1) * 0xff) + ',' + Math.round(palette2color(i/bars, 2) * 0xff) + ')" x="' + (cW * i) + '" height="' + lH + '" width="' + Math.ceil(cW+1) + '"></rect>';
+      }
+
+      newHTML += ' </svg>';
+      
+      $("#ui-slider-palette .ui-slider-range").hide();
+      $("#ui-slider-palette svg").remove();
+      $("#ui-slider-palette").append(newHTML);
+
+      // add numbers to handles
+      /*
+      $($("#ui-slider-palette .ui-slider-handle")[0]).html('<div class="vertical-text">' + (ui_params.palette_minC * 100).toFixed(0) + '%</div>');
+      $($("#ui-slider-palette .ui-slider-handle")[1]).html('<div class="vertical-text">' + (ui_params.palette_maxC * 100).toFixed(0) + '%</div>');
+      */
+
+//       code for triangle sliders
+///*
+      // change style for second handle
+      $('#ui-slider-palette .ui-slider-handle').eq(1).addClass("ui-slider-handle-right");
+      
+      // add numbers to handles onmouseover="UI_Color_Pallete_Hover_Show()" onmouseout="UI_Color_Pallete_Hover_Hide()" 12 to -31
+      $($("#ui-slider-palette .ui-slider-handle")[0]).html('<div style="margin-top: 14px; margin-left: -15px; width: 33px;  font-size: 13px; color:black; text-align: center">' + (ui_params.palette_minC * 100).toFixed(0) + '%</div>');   
+      $($("#ui-slider-palette .ui-slider-handle")[1]).html('<div style="margin-top: -31px; margin-left:-15px; width: 33px; font-size: 13px; color:black; text-align: center ">' + (ui_params.palette_maxC * 100).toFixed(0) + '%</div>');
+    
+      // (auto) hide color pallete legend
+      UI_Color_Pallete_Hover_Show();
+  //    $($("#ui-slider-palette .ui-slider-handle")[0]).focusin(UI_Color_Pallete_Hover_Show);
+  //    $($("#ui-slider-palette .ui-slider-handle")[0]).focusout(UI_Color_Pallete_Hover_Hide);
+  //    $($("#ui-slider-palette .ui-slider-handle")[1]).focusin(UI_Color_Pallete_Hover_Show);
+  //    $($("#ui-slider-palette .ui-slider-handle")[1]).focusout(UI_Color_Pallete_Hover_Hide);
+      
+
+      // update palette legend
+      var lW = 177, lH = 49, tH = 20;
+      var newHTML = '<svg width="' + lW + '" height="' + lH + '"> ';
+      var cW = lW / colorPalette[ui_params.palette_index].length;
+      for (var i = 0; i < colorPalette[ui_params.palette_index].length; i++) {
+        newHTML += '<rect fill="rgb(' + (colorPalette[ui_params.palette_index][i][0] * 0xff) + ',' + (colorPalette[ui_params.palette_index][i][1] * 0xff) + ',' + (colorPalette[ui_params.palette_index][i][2] * 0xff) + ')" x="' + (cW * i) + '" height="' + (lH - tH) + '" width="' + (cW+1) + '"></rect>';
+        // to avoid cluttering, jump over odd numbers
+        if (i % 2) continue;
+        newHTML += '<text font-size="13px" fill="black" y="' + (lH - tH + 20) + '" x="' + Math.max((cW * i - 5), 0) + '">';
+        var v = (i >= Math.floor(colorPalette[ui_params.palette_index].length/2) ? ((i - Math.floor(colorPalette[ui_params.palette_index].length/2)) * (ui_params.palette_maxC - ui_params.palette_midC) / Math.ceil(colorPalette[ui_params.palette_index].length/2) + ui_params.palette_midC) : (i * (ui_params.palette_midC - ui_params.palette_minC) / Math.floor(colorPalette[ui_params.palette_index].length/2) + ui_params.palette_minC));
+        newHTML += (v*100).toFixed(0) + '</text>';
+      }
+      newHTML += ' </svg>';
+      $('#ui-palette-legend').html(newHTML);
+    }
+
+    function palette2color(x, i) {
+      if (x >= ui_params.palette_maxC)
+        return colorPalette[ui_params.palette_index][colorPalette[ui_params.palette_index].length-1][i];
+
+      if (x <= ui_params.palette_minC)
+        return colorPalette[ui_params.palette_index][0][i];
+
+      if (x >= ui_params.palette_midC) {
+        x -= ui_params.palette_midC;
+        var hp = (ui_params.palette_maxC - ui_params.palette_midC) / (Math.ceil(colorPalette[ui_params.palette_index].length / 2) - 1);
+        var a = Math.floor(x / hp);
+        var d = x - a * hp;
+        a += Math.floor(colorPalette[ui_params.palette_index].length / 2);
+        return (d * colorPalette[ui_params.palette_index][a + 1][i] + (hp - d) * colorPalette[ui_params.palette_index][a][i]) / hp;
+      }
+
+      x -= ui_params.palette_minC;
+      var hn = (ui_params.palette_midC - ui_params.palette_minC) / (Math.floor(colorPalette[ui_params.palette_index].length / 2));
+      var a = Math.floor(x / hn);
+      var d = x - a * hn;
+      return (d * colorPalette[ui_params.palette_index][a + 1][i] + (hn - d) * colorPalette[ui_params.palette_index][a][i]) / hn;
+    }
+
+    // controller for dimension mapping parameters
+    function setMappingValues (params) {
+      // params: data_index, x_map, y_map, z_map, color_map, time_map
+      if (!isNaN(parseFloat(params.x_map)) && isFinite(params.x_map)) {
+        if (params.x_map == -1) {
+          changeDimensionName('ui-x-axis-text');
+          ui_params.x_map = -1;
+        } else if (mainMetaData.columnNames && mainMetaData.columnNames[params.x_map] !== undefined) {
+          changeDimensionName('ui-x-axis-text', mainMetaData.columnNames[params.x_map]);
+          ui_params.x_map = params.x_map;
+        }
+      }
+
+      if (!isNaN(parseFloat(params.y_map)) && isFinite(params.y_map)) {
+        if (params.y_map == -1) {
+          changeDimensionName('ui-y-axis-text');
+          ui_params.y_map = -1;
+        } else if (mainMetaData.columnNames && mainMetaData.columnNames[params.y_map] !== undefined) {
+          changeDimensionName('ui-y-axis-text', mainMetaData.columnNames[params.y_map]);
+          ui_params.y_map = params.y_map;
+        }
+      }
+
+      if (!isNaN(parseFloat(params.z_map)) && isFinite(params.z_map)) {
+        if (params.z_map == -1) {
+          changeDimensionName('ui-z-axis-text');
+          ui_params.z_map = -1;
+        } else if (mainMetaData.columnNames && mainMetaData.columnNames[params.z_map] !== undefined) {
+          changeDimensionName('ui-z-axis-text', mainMetaData.columnNames[params.z_map]);
+          ui_params.z_map = params.z_map;
+        }
+      }
+
+      if (!isNaN(parseFloat(params.color_map)) && isFinite(params.color_map)) {
+        if (params.color_map == -1) {
+          changeDimensionName('ui-c-axis-text');
+          ui_params.color_map = -1;
+        } else if (mainMetaData.columnNames && mainMetaData.columnNames[params.color_map] !== undefined) {
+          changeDimensionName('ui-c-axis-text', mainMetaData.columnNames[params.color_map]);
+          ui_params.color_map = params.color_map;
+        }
+      }
+
+      if (!isNaN(parseFloat(params.time_map)) && isFinite(params.time_map)) {
+        if (params.time_map == -1) {
+          ui_params.time_map = -1;
+          setTimeController({play_mode: false});
+          setSliderValues({time_slider: 0});
+          $("#ui-slider-time").slider("disable");
+          $("#ui-play-btn-container").prop("disabled", true);
+        } else if (mainMetaData.columnNames && mainMetaData.columnNames[params.time_map] !== undefined) {
+          ui_params.time_map = params.time_map;
+          $("#ui-slider-time").slider("enable");
+          $("#ui-play-btn-container").prop("disabled", false);
+        }
+      }
+
+      if (!isNaN(parseFloat(params.data_index)) && isFinite(params.data_index)) {
+        if (params.data_index == -1 || datasets[params.data_index] === undefined) {
+          ui_params.data_index = -1;
+          changeDimensionName('ui-data-source-text');
+          ui_params.x_map = -1;
+          changeDimensionName('ui-x-axis-text');
+          $("#ui-x-axis-btn").prop("disabled", true);
+          $("#ui-x-axis-text").prop("disabled", true);
+          ui_params.y_map = -1;
+          changeDimensionName('ui-y-axis-text');
+          $("#ui-y-axis-btn").prop("disabled", true);
+          $("#ui-y-axis-text").prop("disabled", true);
+          ui_params.z_map = -1;
+          changeDimensionName('ui-z-axis-text');
+          $("#ui-z-axis-btn").prop("disabled", true);
+          $("#ui-z-axis-text").prop("disabled", true);
+          ui_params.color_map = -1;
+          changeDimensionName('ui-c-axis-text');
+          $("#ui-c-axis-btn").prop("disabled", true);
+          $("#ui-c-axis-text").prop("disabled", true);
+          ui_params.time_map = -1;
+          $("#dimensionsList").html('');
+          $("#dataList ul li").css("background-color", "");
+        } else {
+          ui_params.data_index = params.data_index;
+          changeDimensionName('ui-data-source-text', datasets[params.data_index].name);
+          $("#dataList ul li").css("background-color", "");
+          $("#dataList ul li:nth-child(" + (params.data_index+3) + ")").css("background-color", "#F8F8F8");
+          $("#ui-x-axis-btn").prop("disabled", false);
+          $("#ui-x-axis-text").prop("disabled", false);
+          $("#ui-y-axis-btn").prop("disabled", false);
+          $("#ui-y-axis-text").prop("disabled", false);
+          $("#ui-z-axis-btn").prop("disabled", false);
+          $("#ui-z-axis-text").prop("disabled", false);
+          $("#ui-c-axis-btn").prop("disabled", false);
+          $("#ui-c-axis-text").prop("disabled", false);
+        }
+      }
+
+      $("#dimensionsList ul li").css("background-color", "");
+
+      if (ui_params.x_map !== undefined && ui_params.x_map != -1) {
+        $("#dimensionsList ul li:nth-child(" + (ui_params.x_map+3) + ")").css("background-color", "#ffd6cc");
+      }
+      if (ui_params.y_map !== undefined && ui_params.y_map != -1) {
+        $("#dimensionsList ul li:nth-child(" + (ui_params.y_map+3) + ")").css("background-color", "#E6FFE6");
+      }
+      if (ui_params.z_map !== undefined && ui_params.z_map != -1) {
+        $("#dimensionsList ul li:nth-child(" + (ui_params.z_map+3) + ")").css("background-color", "#E0F0FF");
+      }
+
+      if (ui_params.color_map !== undefined && ui_params.color_map != -1) {
+        $("#dimensionsList ul li:nth-child(" + (ui_params.color_map+3) + ")").css("background-color", "#ffebd6");
+      }
+
+      UI_Close_All();
+    }
+
+    function changeDimensionName (dropdownId, dimensionName) {
+      $('#' + dropdownId).val((dimensionName === undefined) ? 'NONE' : dimensionName);
+    }
+
+    function setTimeController (params) {
+      // params: play_mode, frame_number
+      if (params && params.play_mode !== undefined) {
+        ui_params.play_mode = params.play_mode;
+      } else {
+        ui_params.play_mode = $('#ui-play-btn').hasClass('glyphicon-pause');
+      }
+
+      if (ui_params.time_map == -1) {
+        ui_params.play_mode = false;
+      }
+
+      if ((ui_params.play_mode == false && $('#ui-play-btn').hasClass('glyphicon-pause')) || (ui_params.play_mode == true && $('#ui-play-btn').hasClass('glyphicon-play'))) {
+        $('#ui-play-btn').toggleClass('glyphicon-pause').toggleClass('glyphicon-play');
+      }
+
+      // set number of frames
+      if (params && !isNaN(parseFloat(params.frame_number)) && isFinite(params.frame_number)) {
+        ui_params.frame_number = params.frame_number;
+      }
+
+      if (ui_params.play_mode == true) {
+        var frame_to_be = ($("#ui-slider-time").slider("value") + 1) % ui_params.frame_number;
+        setSliderValues({time_slider: frame_to_be});
+        setTimeout(function () {setTimeController()}, 1000);
+      }
+    }
+
+    // initialize all UI parameters
+    function reset () {
+      // reset dimension mapping panel
+      setMappingValues({data_index: null, x_map: -1, y_map: -1, z_map: -1, color_map: -1, time_map: -1});
+      
+      // reset palette
+      setColorValues({palette_index: 0, palette_minC: 0, palette_midC: 0.5, palette_maxC: 1});
+
+      // reset sliders. scale 0 = min of scale, scale 1 = max of scale
+      setSliderValues({scale_x: 100, scale_y: 100, scale_z: 100, point_radius: 0.01, time_slider: 0});
+
+      // stop playback, set number of frames
+      if (mainMetaData.totalFrames !== undefined) {
+        setTimeController({play_mode: false, frame_number: mainMetaData.totalFrames});
+        $("#ui-slider-time").slider("option", "max", mainMetaData.totalFrames-1);
+      } else {
+        setTimeController({play_mode: false, frame_number: 100});
+        $("#ui-slider-time").slider("option", "max", 99);
+      }
+
+      // clear bookmarks
+      /*
+      snapshotList = snapshotList || [];
+      if (snapshotList.length > 0) {
+        for (var i = 0; i < snapshotList.length; i++) {
+          var tid = "#snapshotID" + i + "div";
+          $(tid).remove();
+        }
+        snapshotList = [];
+      }
+      */
+
+      setCameraType('perspective');
+      setControls();
+      $('#ui-indicator-time').val('');
+
+      UI_Axis_Helper({axis_helper: true});
+      UI_Grid_Helper({grid_helper: false});
+      UI_Set_Geo({geo_layer: false});
+      UI_Set_Lock({lock_stream: false});
+    }
+
+    // load a dataset and initialize the visualization engine
+    function loadData(dataindex, callback) {
+
+      dataLoaded = false;
+      reset();
+      setMappingValues({data_index: dataindex});
+
+      destructVisualizationEngine();
+      $('#drawCanvas').empty();
+      
+      if (dataindex == -1) return;
+
+      var dataname = datasets[dataindex].name;
+      var datapath = datasets[dataindex].path;
+      var datafile = datasets[dataindex].filename;
+    
+      $.getJSON(('./' + datapath + 'metadata/' + datafile).replace("//", "/"), function(metaData) {
+        mainMetaData = metaData;
+
+        // fill out dimension names
+        var newHTML = '<ul class="list-unstyled"><li onclick="UI_Set_Mapping_Values(-1);">NONE</li><hr style="margin: 0px">';
+
+        metaData.columnNames.forEach(function(e, i, a) {
+          newHTML += '<li onclick="UI_Set_Mapping_Values(' + i + ');">' + (i+1) + ' - ' + e + '</li>';
+        });
+
+        newHTML += '</ul>';
+        $("#dimensionsList").html(newHTML);
+        
+        // setting up DM
+        var tilingVersion = 3;
+        var defaultDMSettings = {// Host Info
+          //Cache Info
+          dbName : "dm",
+          tilingVersion: tilingVersion,
+
+          //manifest INFO
+          manFileName : "man" + tilingVersion,
+          currentDataset : metaData.dataClass,
+          dmDataPath : datapath + "data/t" + tilingVersion + "/",
+
+          //Caching info
+          minCacheable : "tract",
+          minCacheableSize : 3000000,
+
+          // dataset INFO - Should be a JSON later
+          datasetS : ["rac","wac"],
+          aggLevels : ["block", "tract", "county", "state"],
+          steps : [[1,0.5], [7,4], [59,26], [59,26]], // [long,lat]
+          precisions : [[0,1], [0,0], [0,0], [0,0]], 
+          maxGPUPoints : 1800000,
+          worldMinLong : -125, // west long
+          worldMaxLong : -66,   // east long diff : 59
+          worldMinLat : 24,   // south lat 
+          worldMaxLat : 50,   // north lat diff : 26
+          //maxLat : 49.3457868,    // north lat
+          //minLat : 24.7433195,    // south lat 
+          //minLong : -124.7844079,   // west long
+          //maxLong : -66.9513812,  // east long
+
+          //Network Info
+          maxNumStreams : 8,
+
+          // memory Parameters
+          staticAggLevel : "county",
+          garbageCollectionSize : 5000000,
+
+          debug : false
+        }
+        dm = new DataManager(defaultDMSettings);
+        //end of setting up dm
+
+        //set up geocoder
+        if (typeof google !== "undefined") {
+          geocoder = new google.maps.Geocoder();
+          geobounds = new google.maps.LatLngBounds(
+            new google.maps.LatLng(defaultDMSettings.worldMinLat, defaultDMSettings.worldMinLong),
+            new google.maps.LatLng(defaultDMSettings.worldMaxLat, defaultDMSettings.worldMaxLong)
+          );
+        }
+      
+        // setup visualization engine
+        initializeVisualizationEngine($('#drawCanvas'), metaData, colorPalette);
+
+        // initialization in done
+        dataLoaded = true;
+        reset();
+
+        // if we have a time dimension, assign that by default
+        if (mainMetaData.timeDimension !== undefined) {
+          setMappingValues({time_map: mainMetaData.timeDimension});
+          setSliderValues({time_slider: (ui_params.frame_number-1)});
+        }
+        
+        if (callback !== undefined) callback(null);
+      });
+    }
+
+    function shareHistory () {
+      if (dataLoaded == false) {
+        $("#ui-modal-general-popup").modal();
+        $("#ui-modal-general-popup .modal-title").text('ERROR');
+        $("#ui-modal-general-popup .modal-body").text('Please first load a dataset.');
+        $("#ui-modal-general-popup .modal-footer").html('');
+        return;
+      }
+
+      if (!snapshotList || snapshotList.length == 0) {
+        $("#ui-modal-general-popup").modal();
+        $("#ui-modal-general-popup .modal-title").text('ERROR');
+        $("#ui-modal-general-popup .modal-body").text('Please first bookmark something.');
+        $("#ui-modal-general-popup .modal-footer").html('');
+        return;
+      }
+
+      var d = [];
+      for (var i = 0; i < snapshotList.length; i++) {
+        if ($('#snapshotID' + i + 'div').length) {
+          d.push(snapshotList[i]);
+        }
+      }
+
+      if (d.length == 0) {
+        $("#ui-modal-general-popup").modal();
+        $("#ui-modal-general-popup .modal-title").text('ERROR');
+        $("#ui-modal-general-popup .modal-body").text('Please first bookmark something.');
+        $("#ui-modal-general-popup .modal-footer").html('');
+        return;
+      }
+
+      $.ajax({
+        url: './createShareHistory',
+        type: 'POST', 
+        contentType: 'application/json', 
+        data: JSON.stringify(d)
+      })
+      // receive the hash from the server, create the shareable URL and show it to the user
+      .done(function (data) {
+        $("#ui-modal-general-popup").modal();
+        $("#ui-modal-general-popup .modal-title").text('SHARE URL');
+        
+        var sp = window.location.href.split("?");
+        var share_url = sp[0].replace(/\/*#*$/, "") + '/?uid=' + data;
+
+        //$("#ui-modal-general-popup .modal-body").text(share_url);
+
+        var newHTML = 
+        '<div class="container-fluid">'+
+          '<div class="input-group" style="width:100%">'+
+            '<input value="' + share_url + '" type="url" id="ui-url-text" class="form-control" readonly="readonly">'+
+            '<span class="input-group-btn"  style="width: 40px">' +
+            '<button type="button" class="btn btn-primary" onclick="$(\'#ui-url-text\').select();document.execCommand(\'copy\');">COPY</button>'+
+            '</span>' +
+          '</div>'+
+        '</div>';
+        
+
+        
+        $("#ui-modal-general-popup .modal-body").html(newHTML);
+
+        $("#ui-modal-general-popup .modal-footer").html('');
+        
+        $("#ui-url-text").focus();
+        $("#ui-url-text").select();
+      });
+    }
+
+    // functions for managing ui functionalities
+    function UI_Load_Data () {
+      UI_Close_All();
+      $("#ui-data-source-btn").blur();
+      $("#ui-data-source-text").css("background-color", "#F8F8F8");
+      $("#ui-data-source-btn").addClass("active");
+      $("#load-data-panel").removeClass("hidden");
+    }
+
+    function UI_Load_Data_Close () {
+      $("#ui-data-source-text").css("background-color", "#ffffff");
+      $("#ui-data-source-btn").removeClass("active");
+      $("#load-data-panel").addClass("hidden");
+    }
+
+    function UI_Map_Dimension_X () {
+      UI_Close_All();
+      $("#ui-x-axis-btn").blur();
+      $("#ui-x-axis-text").css("background-color", "#ffd6cc");
+      $("#ui-x-axis-btn").addClass("active");
+      $("#data-dimensions-panel").removeClass("hidden");
+    }
+
+    function UI_Map_Dimension_Y () {
+      UI_Close_All();
+      $("#ui-y-axis-btn").blur();
+      $("#ui-y-axis-text").css("background-color", "#E6FFE6");
+      $("#ui-y-axis-btn").addClass("active");
+      $("#data-dimensions-panel").removeClass("hidden");
+    }
+
+    function UI_Map_Dimension_Z () {
+      UI_Close_All();
+      $("#ui-z-axis-btn").blur();
+      $("#ui-z-axis-text").css("background-color", "#E0F0FF");
+      $("#ui-z-axis-btn").addClass("active");
+      $("#data-dimensions-panel").removeClass("hidden");
+    }
+
+    function UI_Map_Dimension_C () {
+      UI_Close_All();
+      $("#ui-c-axis-btn").blur();
+      $("#ui-c-axis-text").css("background-color", "#ffebd6");
+      $("#ui-c-axis-btn").addClass("active");
+      $("#data-dimensions-panel").removeClass("hidden");
+    }
+
+    function UI_Load_Palette () {
+      UI_Close_All();
+      $("#ui-palette-btn").blur();
+      $("#ui-palette-btn").addClass("active");
+      $("#palettes-panel").removeClass("hidden");
+    }
+
+    function UI_Load_Palette_Close () {
+      $("#ui-palette-btn").removeClass("active");
+      $("#palettes-panel").addClass("hidden");
+    }
+
+    function UI_Map_Dimension_Close () {
+      $("#data-dimensions-panel").addClass("hidden");
+      $("#ui-x-axis-text").css("background-color", "#ffffff");
+      $("#ui-x-axis-btn").removeClass("active");
+      $("#ui-y-axis-text").css("background-color", "#ffffff");
+      $("#ui-y-axis-btn").removeClass("active");
+      $("#ui-z-axis-text").css("background-color", "#ffffff");
+      $("#ui-z-axis-btn").removeClass("active");
+      $("#ui-c-axis-text").css("background-color", "#ffffff");
+      $("#ui-c-axis-btn").removeClass("active");
+    }
+
+    function UI_Close_All () {
+      UI_Load_Data_Close();
+      UI_Map_Dimension_Close();
+      UI_Load_Palette_Close();
+    }
+
+    function UI_Toggle_Panels () {
+      $("#ui-toggle-panels-btn").blur();
+      if ($("#visualization-panel").hasClass("hidden")) {
+        $("#tools-panel").removeClass("hidden");
+        $("#visualization-panel").removeClass("hidden");
+        $("#ui-toggle-panels-btn").addClass("active");
+      } else {
+        UI_Close_All();
+        $("#tools-panel").addClass("hidden");
+        $("#visualization-panel").addClass("hidden");
+        $("#ui-toggle-panels-btn").removeClass("active");
+      }
+    }
+
+    function UI_Set_Mapping_Values (v) {
+      if ($("#ui-x-axis-btn").hasClass("active")) {
+        setMappingValues({x_map: v});
+      } else if ($("#ui-y-axis-btn").hasClass("active")) {
+        setMappingValues({y_map: v});
+      } else if ($("#ui-z-axis-btn").hasClass("active")) {
+        setMappingValues({z_map: v});
+      } else if ($("#ui-c-axis-btn").hasClass("active")) {
+        setMappingValues({color_map: v});
+      }
+    }
+
+    function UI_Set_Geo (v) {
+      if (ui_params.geo_layer === undefined || dataLoaded == false)
+        ui_params.geo_layer = false;
+
+      if (dataLoaded) {
+        if (mainMetaData.latitude === undefined || mainMetaData.longitude === undefined) {
+          $("#ui-modal-general-popup").modal();
+          $("#ui-modal-general-popup .modal-title").text('ERROR');
+          $("#ui-modal-general-popup .modal-body").text('This dataset does\'t have a geo layer.');
+          $("#ui-modal-general-popup .modal-footer").html('');
+          return;
+        }
+
+        if (v === undefined || v.geo_layer === undefined) {
+          ui_params.geo_layer = !ui_params.geo_layer;
+        } else {
+          ui_params.geo_layer = v.geo_layer;
+        }
+      }
+
+      if (ui_params.geo_layer) {
+        UI_Close_All();
+        $("#ui-geo-btn").addClass('active');
+        setMappingValues({x_map: mainMetaData.longitude, y_map: mainMetaData.latitude});
+        setSliderValues({scale_x: 100, scale_y: 100});
+        setGeoLayer(true);
+        $("#ui-x-axis-btn").prop("disabled", true);
+        $("#ui-x-axis-text").prop("disabled", true);
+        $("#ui-y-axis-btn").prop("disabled", true);
+        $("#ui-y-axis-text").prop("disabled", true);
+        $("#ui-slider-scale-x").slider("disable");
+        $("#ui-slider-scale-y").slider("disable");
+        UI_Axis_Helper({axis_helper: false});
+        $("#ui-axis-btn").prop("disabled", true);
+        UI_Grid_Helper({grid_helper: false});
+        $("#ui-grid-btn").prop("disabled", true);
+      } else {
+        $("#ui-geo-btn").removeClass('active');
+        setGeoLayer(false);
+        $("#ui-x-axis-btn").prop("disabled", false);
+        $("#ui-x-axis-text").prop("disabled", false);
+        $("#ui-y-axis-btn").prop("disabled", false);
+        $("#ui-y-axis-text").prop("disabled", false);
+        $("#ui-slider-scale-x").slider("enable");
+        $("#ui-slider-scale-y").slider("enable");
+        $("#ui-axis-btn").prop("disabled", false);
+        $("#ui-grid-btn").prop("disabled", false);
+      }
+    }
+
+    function UI_Search_Modal () {
+      if (dataLoaded == false) {
+        return;
+      }
+
+      if (ui_params.geo_layer == false) {
+        $("#ui-modal-general-popup").modal();
+        $("#ui-modal-general-popup .modal-title").text('ERROR');
+        $("#ui-modal-general-popup .modal-body").text('You must first go to geographic mode. Click on the button with a globe on it.');
+        $("#ui-modal-general-popup .modal-footer").html('');
+        return;
+      }
+
+      $("#ui-modal-general-popup").modal();
+      $("#ui-modal-general-popup .modal-title").text('SEARCH ADDRESS');
+
+      var newHTML = 
+      '<div class="container-fluid">'+
+        '<form class="form-inline" id="panelLookupAddressForm" onsubmit="codeAddress(); return false;">'+
+          '<div class="form-group" style="width:100%;">'+
+            '<div class="input-group" style="width:100%">'+
+              '<input type="text" class="form-control" id="lookupAddressText" placeholder="San Francisco" onsubmit="codeAddress()">'+
+              '<span class="input-group-btn"  style="width: 40px">' +
+              '<button type="button" class="btn btn-primary" onclick="codeAddress()">GO</button>'+
+              '</span>' +
+            '</div>'+
+          '</div>'+
+        '</form>'+
+      '</div>' +
+      '<div id="ui-lookup-address-error"></div>';
+
+      $("#ui-modal-general-popup .modal-body").html(newHTML);
+      $("#ui-modal-general-popup .modal-footer").html('');
+      $("#lookupAddressText").focus();
+    }
+
+    function UI_Help_Modal () {
+      $("#ui-modal-general-popup").modal();
+      $("#ui-modal-general-popup .modal-title").text('HELP');
+
+      $.get( "./help", function(data) {
+        $("#ui-modal-general-popup .modal-body").html(data);
+      });
+
+      $("#ui-modal-general-popup .modal-footer").html('<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>');
+    }
+
+    function UI_Screenshot () {
+      if (dataLoaded == false) return;
+
+      var d = takeScreenshot();
+
+      $("#ui-modal-general-popup").modal();
+      $("#ui-modal-general-popup .modal-title").text('SCREENSHOT');
+      $("#ui-modal-general-popup .modal-body").html('<div style="text-align: center"><img style="display: inline" class="img-responsive" width="' + (window.innerWidth / 3) + '" height="' + (window.innerHeight / 3) + '" src="' + d + '"></div>');
+      $("#ui-modal-general-popup .modal-footer").html('<a id="ui-screenshot-btn" href="#" download><button type="button" class="btn btn-primary">Save</button></a>');
+      $("#ui-screenshot-btn").attr("href", d);
+    }
+
+    function UI_Axis_Helper (v) {
+      if (ui_params.axis_helper === undefined || dataLoaded == false)
+        ui_params.axis_helper = false;
+
+      if (dataLoaded) {
+        if (v === undefined || v.axis_helper === undefined) {
+          ui_params.axis_helper = !ui_params.axis_helper;
+        } else {
+          ui_params.axis_helper = v.axis_helper;
+        }
+      }
+
+      if (ui_params.axis_helper) {
+        $("#ui-axis-btn").addClass('active');
+        setAxisHelper(true);
+      } else {
+        $("#ui-axis-btn").removeClass('active');
+        setAxisHelper(false);
+      }
+    }
+
+    function UI_Grid_Helper (v) {
+      if (ui_params.grid_helper === undefined || dataLoaded == false)
+        ui_params.grid_helper = false;
+
+      if (dataLoaded) {
+        if (v === undefined || v.grid_helper === undefined) {
+          ui_params.grid_helper = !ui_params.grid_helper;
+        } else {
+          ui_params.grid_helper = v.grid_helper;
+        }
+      }
+
+      if (ui_params.grid_helper) {
+        $("#ui-grid-btn").addClass('active');
+        setGridHelper(true);
+      } else {
+        $("#ui-grid-btn").removeClass('active');
+        setGridHelper(false);
+      }
+    }
+
+    function UI_Set_Lock (v) {
+      if (v && v.lock_stream !== undefined) {
+        ui_params.lock_stream = v.lock_stream;
+      } else {
+        ui_params.lock_stream = $("#ui-lock-btn").hasClass('active');
+      }
+
+      if (ui_params.lock_stream) {
+        $("#ui-lock-btn-icon").removeClass('fa fa-unlock-alt fa-lg').addClass('fa fa-lock fa-lg');
+        $("#ui-lock-btn").addClass('active');
+      } else {
+        $("#ui-lock-btn-icon").removeClass('fa fa-lock fa-lg').addClass('fa fa-unlock-alt fa-lg');
+        $("#ui-lock-btn").removeClass('active');
+      }
+    }
+  
+    function codeAddress() {
+      var address = $( "#lookupAddressText" ).val();
+      $("#ui-lookup-address-error").text('');
+
+      if(address !="" && google){
+        geocoder.geocode({ 'address': address, 'bounds': geobounds, componentRestrictions: {country: 'US' }}, function(results, status) {
+          if (status == google.maps.GeocoderStatus.OK) {
+            //alert("location: " + results[0].geometry.location + " bounds: " + results[0].geometry.bounds + " viewport: " + results[0].geometry.viewport + " address: " + results[0].formatted_address + " country: " + results[0].types);
+
+            var adlat = results[0].geometry.location.lat();
+            var adlong = results[0].geometry.location.lng();
+
+            if( adlong > -66 || adlong < -125 || adlat > 50 || adlat < 24 ){
+              $("#ui-lookup-address-error").text('Only U.S. addresses are accepted.');
+            } else {
+              $("#ui-modal-general-popup").modal('hide');
+              Goto_Lat_Lng ({latitude: adlat, longitude: adlong});
+            }
+
+          } else {
+            $("#ui-lookup-address-error").text('Invalid address.');
+          }
+        });
+      }
+
+      return false;
+    }
+    
+    
+    function UI_Color_Pallete_Hover_Show(){
+      $("#ui-palette-legend-row").show();
+    }
+    
+    function UI_Color_Pallete_Hover_Hide(){
+      $("#ui-palette-legend-row").hide();
+    }
+
+    // responsive ui
+    
+    function resizeScreen () {
+      var winH = $(window).height();
+      var min_winH = 850;
+      var scale = winH / min_winH;
+
+      if (winH < min_winH) {
+        $(".resizable-ui").css("transform", "scale(" + scale + ")");
+      }
+    }
+    
+    // NOTE: uncomment for responsive ui
+    //$(window).resize(resizeScreen);
+
+    // initialize ui and load list of available datasets
+    $(document).ready( function () {
+      // disable right click context menu
+      $('#pageContent').on("contextmenu", function (e) { e.preventDefault(); });
+
+      // NOTE: uncomment for responsive ui
+      //resizeScreen();
+
+      // load tooltips
+      $('td').tooltip({'selector': '', 'placement': 'left', container: 'body'});
+
+      // load sliders
+      $("#ui-slider-radius").slider({
+        range: "min",
+        min: 0.01,
+        max: 3,
+        value: 0.01,
+        step: 0.01,
+        slide: function (event, ui) {
+          setSliderValues({point_radius: ui.value});
+        }
+      });
+
+      $("#ui-slider-scale-x").slider({
+        range: "min",
+        min: 1,
+        max: 100,
+        value: 100,
+        step: 1,
+        slide: function (event, ui) {
+          setSliderValues({scale_x: ui.value});
+        }
+      });
+
+      $("#ui-slider-scale-y").slider({
+        range: "min",
+        min: 1,
+        max: 100,
+        value: 100,
+        step: 1,
+        slide: function (event, ui) {
+          setSliderValues({scale_y: ui.value});
+        }
+      });
+
+      $("#ui-slider-scale-z").slider({
+        range: "min",
+        min: 1,
+        max: 100,
+        value: 100,
+        step: 1,
+        slide: function (event, ui) {
+          setSliderValues({scale_z: ui.value});
+        }
+      });
+
+      $("#ui-slider-palette").slider({
+        range: true,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        values: [ 0.2, 0.8 ],
+        slide: function( event, ui ) {
+          setColorValues({palette_minC: ui.values[0], palette_midC: (ui.values[0] + ui.values[1]) / 2, palette_maxC: ui.values[1]});
+        }
+      });
+
+      $("#ui-slider-time").slider({
+        range: "min",
+        value: 0,
+        min: 0,
+        max: 9,
+        step: 1,
+        slide: function( event, ui ) {
+          setSliderValues({time_slider: ui.value});
+        }
+      });
+
+      // check for WebGL
+      if (!Detector.webgl) {
+        $("#ui-modal-general-alert").modal({keyboard: false, backdrop: 'static'});
+        $("#ui-modal-general-alert .modal-title").text('WebGL NOT SUPPORTED');
+        $("#ui-modal-general-alert .modal-body").html( window.WebGLRenderingContext ? [
+            'Your graphics card does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br />',
+            'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'
+            ].join( '\n' ) : [
+            'Your browser does not seem to support <a href="http://khronos.org/webgl/wiki/Getting_a_WebGL_Implementation" style="color:#000">WebGL</a>.<br/>',
+            'Find out how to get it <a href="http://get.webgl.org/" style="color:#000">here</a>.'
+            ].join( '\n' ) );
+      }
+
+      // build color palettes
+      var tempPalette = [];
+      for (var p = 0; p < colorPalette.length; p++) {
+        tempPalette.push(JSON.parse(JSON.stringify(colorPalette[p])));
+        tempPalette.push(JSON.parse(JSON.stringify(colorPalette[p].reverse())));
+      }
+      colorPalette = tempPalette;
+      setColorValues({palette_index: 0, palette_minC: 0, palette_midC: 0.5, palette_maxC: 1});
+      var newHTML = '<ul class="list-unstyled">';
+      var pW = 265, pH = 26, bars = 100;
+      for (var p = 0; p < colorPalette.length; p++) {
+        var cW = pW / bars;
+        ui_params.palette_index = p;
+        for (var c = 0; c < colorPalette[p].length; c++) {
+          colorPalette[p][c][0] /= 0xff;
+          colorPalette[p][c][1] /= 0xff;
+          colorPalette[p][c][2] /= 0xff;
+        }
+        newHTML += '<li><svg width="' + pW + '" height="' + pH + '" onclick="UI_Close_All(); setColorValues({palette_index: ' + p + '});">';
+        for (var c = 0; c < bars; c++) {
+          newHTML += '<rect fill="rgb(' + Math.round(palette2color(c/bars, 0) * 0xff) + ',' + Math.round(palette2color(c/bars, 1) * 0xff) + ',' + Math.round(palette2color(c/bars, 2) * 0xff) + ')" height="' + pH + '" width="' + (cW+1) + '" x="' + (cW*c) + '"> </rect>';
+        }
+        newHTML += '</svg></li>';
+      }
+      newHTML += '</ul>';
+      $('#palettesList').html(newHTML);
+
+      // initialize params
+      reset();
+
+      // read list of available datasets
+      $.getJSON('resources/datasets.json', function(data) {
+        // load list of datasets
+        var newHTML = '<ul class="list-unstyled"><li onclick="loadData(-1);">NONE</li><hr style="margin: 0px">';
+
+        data.datasets.forEach(function(e, i, a){
+          datasets.push({'name': e.dataname, 'path': e.path, 'filename': e.filename, 'index': i});
+          newHTML += '<li onclick="loadData(' + i + ');">' + (i+1) + ' - ' + e.dataname + '</li>\n';
+          });
+
+        newHTML += '</ul>';
+        $("#dataList").html(newHTML);
+        
+//        return;
+        // check if this is a shared link, then load the appropriate page
+        // also, if we have a default view, load that
+        if ($.urlParam('uid') || data.defaultView) {
+          $.ajax({
+            url: './loadShareView', 
+            type: 'POST', 
+            contentType: 'application/json', 
+            data: JSON.stringify({'uid': ($.urlParam('uid') ? $.urlParam('uid') : data.defaultView)})
+          })
+          // receive the hash from the server, create the shareable URL and show it to the user
+          .done(function (data) {
+            if (data === undefined) return;
+            var d = JSON.parse(data);
+
+            // this is a single view
+            if (d.type == "view") {
+              // note: this is no longer used. I'll keep it for future reference
+              loadSnapshotJson(JSON.stringify(d.snapshot));
+            }
+            // this is a series of bookmarks
+            else if (d.type == "history") {
+              // show loading bar
+              $("#ui-modal-general-alert").modal({keyboard: false, backdrop: 'static'});
+              $("#ui-modal-general-alert .modal-title").text('LOADING BOOKMARKS');
+              $("#ui-modal-general-alert .modal-body").html('<div class="progress"><div class="progress-bar progress-bar-warning" style="width: 0%;"></div></div>');
+
+              snapshotList = [];
+              var items = Array.apply(null, {length: d.snapshots.length}).map(Number.call, Number);
+
+              async.eachSeries(items, function (item, callback) {
+                snapshotList.push(d.snapshots[item]);
+                loadHistoryThenBookmark(item, callback);
+                $('#ui-modal-general-alert .progress-bar').css('width', (100*(item+1)/items.length)+'%');
+              }, function (err) {
+                $("#ui-modal-general-alert").modal('hide');
+                $('#ui-modal-general-alert .progress-bar').css('width', '0%');
+
+                // go to the first bookmark
+                $("#historyList")[0].scrollTop = 0;
+                loadHistory(0);
+              });
+            }
+          });
+        };
+      });
+    });
+
+  </script>
+</head>
+
+<body>
+
+  <div id="ui-modal-general-alert" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background-color: #ffb2b2">
+          <h4 class="modal-title"></h4>
+        </div>
+        <div class="modal-body">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ui-modal-general-popup" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background-color: #E6FFFF">
+          <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+          <h4 class="modal-title"></h4>
+        </div>
+        <div class="modal-body"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pageContent">
+
+    <div id="drawCanvas"></div>
+
+
+    <div id="visualization-panel" class="resizable-ui">
+      <div class="panel panel-default">
+        <div class="panel-heading"><h3 class="panel-title">VISUALIZATION</h3></div>
+        
+        <table class="table tablenoborder">
+        <colgroup>
+          <col style="width: 25%">
+          <col style="width: 75%">
+        </colgroup>
+        <tbody>
+
+          <tr>
+            <td colspan="2">SOURCE</td>
+          </tr>
+
+          <tr>
+            <td colspan="2">
+            <div class="input-group">
+              <input id="ui-data-source-text" type="text" value="NONE" class="form-control" readonly="readonly" onfocus="this.blur()" onclick="UI_Load_Data()" style="background-color:#ffffff">
+              <span class="input-group-btn">
+                <button id="ui-data-source-btn" class="btn btn-default" type="button" onclick="UI_Load_Data()">
+                  <span class="glyphicon glyphicon-chevron-right"></span>
+                </button>
+              </span>
+            </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td id="ui-indicator-radius" style="font-size: 12px; padding-right: 0px !important"><i class="fa fa-square"></i> SIZE</td>
+            <td>
+              <div id="ui-slider-radius" class="jq-slider"></div>
+            </td>
+          </tr>
+          
+        </tbody>
+        </table>
+
+        <hr style="margin-top: 7px; margin-bottom: 10px">
+
+        <table class="table tablenoborder">
+        <colgroup>
+          <col style="width: 25%">
+          <col style="width: 75%">
+        </colgroup>
+        <tbody>
+
+          <tr>
+            <td colspan="2">X AXIS</td>
+          </tr>
+
+          <tr>
+            <td colspan="2">
+            <div class="input-group">  
+              <input id="ui-x-axis-text" type="text" value="" class="form-control" readonly="readonly" onfocus="this.blur()" onclick="UI_Map_Dimension_X()" style="background-color:#ffffff" disabled>
+              <span class="input-group-btn">
+                <button id="ui-x-axis-btn" class="btn btn-default" type="button" onclick="UI_Map_Dimension_X()" disabled>
+                  <span class="glyphicon glyphicon-chevron-right"></span>
+                </button>
+              </span>
+            </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td id="ui-indicator-scale-x" style="font-size: 12px; padding-right: 0px !important">SCALE</td>
+            <td>
+              <div id="ui-slider-scale-x" class="jq-slider"></div>
+            </td>
+          </tr>
+
+          <tr>
+            <td colspan="2" style="padding: 5px !important"><hr style="margin: 0px"></td>
+          </tr>
+
+          <tr>
+            <td colspan="2">Y AXIS</td>
+          </tr>
+
+          <tr>
+            <td colspan="2">
+            <div class="input-group">
+              <input id="ui-y-axis-text" type="text" value="" class="form-control" readonly="readonly" onfocus="this.blur()" onclick="UI_Map_Dimension_Y()" style="background-color:#ffffff" disabled>
+              <span class="input-group-btn">
+                <button id="ui-y-axis-btn" class="btn btn-default" type="button" onclick="UI_Map_Dimension_Y()" disabled>
+                  <span class="glyphicon glyphicon-chevron-right"></span>
+                </button>
+              </span>
+            </div>
+            </td>
+          </tr>
+          
+          <tr>
+            <td id="ui-indicator-scale-y" style="font-size: 12px; padding-right: 0px !important">SCALE</td>
+            <td>
+              <div id="ui-slider-scale-y" class="jq-slider"></div>
+            </td>
+          </tr>
+
+          <tr>
+            <td colspan="2" style="padding: 5px !important"><hr style="margin: 0px"></td>
+          </tr>
+
+          <tr>
+            <td colspan="2">Z AXIS</td>
+          </tr>
+
+          <tr>
+            <td colspan="2">
+            <div class="input-group">
+              <input id="ui-z-axis-text" type="text" value="" class="form-control" readonly="readonly" onfocus="this.blur()" onclick="UI_Map_Dimension_Z()" style="background-color:#ffffff" disabled>
+              <span class="input-group-btn">
+                <button id="ui-z-axis-btn" class="btn btn-default" type="button" onclick="UI_Map_Dimension_Z()" disabled>
+                  <span class="glyphicon glyphicon-chevron-right"></span>
+                </button>
+              </span>
+            </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td id="ui-indicator-scale-z" style="font-size: 12px; padding-right: 0px !important">SCALE</td>
+            <td>
+              <div id="ui-slider-scale-z" class="jq-slider"></div>
+            </td>
+          </tr>
+
+        </tbody>
+        </table>
+
+        <hr style="margin-top: 7px; margin-bottom: 10px">
+
+        <table class="table tablenoborder">
+          <colgroup>
+          <col style="width: 25%">
+          <col style="width: 75%">
+        </colgroup>
+        <tbody>
+
+          <tr >
+            <td colspan="2">COLOR</td>
+          </tr>
+
+          <tr>
+            <td colspan="2">
+            <div class="input-group">
+              <input id="ui-c-axis-text" type="text" value="" class="form-control" onfocus="this.blur()" readonly="readonly" onclick="UI_Map_Dimension_C()" style="background-color:#ffffff" disabled>
+              <span class="input-group-btn">
+                <button id="ui-c-axis-btn" class="btn btn-default" type="button" onclick="UI_Map_Dimension_C()" disabled>
+                  <span class="glyphicon glyphicon-chevron-right"></span>
+                </button>
+              </span>
+            </div>
+            </td>
+          </tr>
+
+          <tr >
+            <td>
+              <button id="ui-palette-btn" style="margin-left: 0px; margin-top: 9px; margin-bottom:14px; width: 37px; height: 34px; background-image: url('css/icons/palette.png'); background-position: center; background-repeat: no-repeat; " class="btn btn-default"  type="button" onmousedown="UI_Load_Palette();">
+<!--                  <span class="glyphicon glyphicon-tint"></span>-->
+<!--                <i class="fa fa-tint fa-lg"></i>-->
+              </button>
+            </td>
+            <td>
+              <div id="ui-slider-palette" style="  margin-top: 13px; margin-bottom:14px;" ></div>
+            </td>
+          </tr>
+		  <tr >
+			  <td colspan="2" id="ui-palette-legend-row" style="display: block; ">
+	        	<div id="ui-palette-legend" ></div>
+			  </td>
+		  </tr>
+          
+          
+        </tbody>
+        </table>
+
+      </div>
+    </div>
+
+
+    <div id="tools-panel" class="resizable-ui">
+      <div class="panel panel-default">
+        <div class="panel-heading"><h3 class="panel-title">TOOLS</h3></div>
+
+        <table class="table tablenoborder" style="padding:0px">
+        <colgroup>
+          <col style="width: 30%">
+          <col style="width: 30%">
+          <col style="width: 30%">
+        </colgroup>
+        <tbody>
+
+          <tr>
+            <td colspan="3">BOOKMARKS</td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onclick="saveHistory();" onfocus="this.blur()">
+<!--              <span class="glyphicon glyphicon-bookmark"></span>-->
+              <i class="fa fa-star fa-lg"></i>
+            </button>
+            </td>
+            <td style="text-align: center !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="shareHistory()">
+<!--              <span class="glyphicon glyphicon-share-alt"></span>-->
+              <i class="fa fa-share-alt fa-lg"></i>
+
+            </button>
+            </td>
+            <td style="text-align: left !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="if (confirm('Are you sure you want to delete all bookmarks?')) $('#historyList').children().remove()">
+<!--              <span class="glyphicon glyphicon-trash"></span>-->
+              <i class="fa fa-trash fa-lg"></i>
+<!--              <i class="fa fa-refresh fa-lg"></i>-->
+
+            </button>
+            </td>
+          </tr>
+
+          <tr>
+            <td colspan="3" style="padding: 5px !important"><hr style="margin: 0px"></td>
+          </tr>
+          
+        </tbody>
+        </table>
+
+        <div id="historyList">
+        </div>
+
+        <hr style="margin-top: 10px; margin-bottom: 10px">
+
+        <table class="table tablenoborder" style="padding:0px">
+        <colgroup>
+          <col style="width: 30%">
+          <col style="width: 30%">
+          <col style="width: 30%">
+        </colgroup>
+        <tbody>
+
+          <tr>
+            <td colspan="3">LOOK AT</td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onclick="setCameraZ();" onfocus="this.blur()" >XY</button>
+            </td>
+            <td style="text-align: center !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onclick="setCameraX();" onfocus="this.blur()" >YZ</button>
+            </td>
+            <td style="text-align: left !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onclick="setCameraY();" onfocus="this.blur()" >ZX</button>
+            </td>
+          </tr>
+          
+        </tbody>
+        </table>
+
+        <hr style="margin-top: 10px; margin-bottom: 10px">
+
+        <table class="table tablenoborder" style="padding:0px">
+        <colgroup>
+          <col style="width: 30%">
+          <col style="width: 30%">
+          <col style="width: 30%">
+        </colgroup>
+        <tbody>
+
+          <tr>
+            <td colspan="3">HELPERS</td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right !important; padding-left:0px !important; padding-right:0px !important">
+            <button id="ui-geo-btn" class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Set_Geo({});">
+<!--              <span class="glyphicon glyphicon-globe"></span>-->
+              <i class="fa fa-globe fa-lg"></i>
+            </button>
+            </td>
+            <td style="text-align: center !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Search_Modal();">
+<!--              <span class="glyphicon glyphicon-search"></span>-->
+              <i class="fa fa-search fa-lg"></i>
+<!--              <i class="fa fa-map-marker fa-lg"></i>-->
+
+            </button>
+            </td>
+            <td style="text-align: left !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Screenshot()">
+<!--              <span class="glyphicon glyphicon-camera"></span>-->
+              <i class="fa fa-camera fa-lg"></i>
+            </button>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right !important; padding-left:0px !important; padding-right:0px !important">
+<!--              <button id="ui-axis-btn" class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Axis_Helper({})">-->
+            <button id="ui-axis-btn" class="btn btn-default btn-lg" type="button" style="background-image: url('css/icons/axis.svg'); background-position: center; background-repeat: no-repeat; width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Axis_Helper({})">
+<!--              <span class="glyphicon glyphicon-move"></span>-->
+<!--              <i class="fa fa-arrows fa-lg"></i>-->
+            </button>
+            </td>
+            <td style="text-align: center !important; padding-left:0px !important; padding-right:0px !important">
+            <button id="ui-grid-btn" class="btn btn-default btn-lg" type="button" style="background-image: url('css/icons/grid.png'); background-position: center; background-repeat: no-repeat; width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Grid_Helper({})">
+<!--              <span style="background-color: black"><i class="fa fa-th fa-lg fa-inverse"></i></span>-->
+<!--              <span class="glyphicon glyphicon-th" style="font-size: 1.2em;"></span>-->
+<!--              <i class="fa fa-th fa-lg"></i>-->
+            </button>
+            </td>
+            <td style="text-align: left !important; padding-left:0px !important; padding-right:0px !important">
+            <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Help_Modal()">
+<!--              <span class="glyphicon glyphicon-question-sign"></span>-->
+              <i class="fa fa-question fa-lg"></i>
+<!--              <i class="fa fa-question-circle fa-lg"></i>-->
+
+            </button>
+            </td>
+          </tr>
+          
+        </tbody>
+        </table>
+
+        <br>
+
+      </div>
+    </div>
+
+    <div id="timer-panel" class="resizable-ui">
+      <table class="table tablenoborder" style="padding:0px">
+      <colgroup>
+        <col style="width: 60px">
+        <col style="width: 110px">
+        <col>
+        <col style="width: 60px">
+        <col style="width: 120px">
+      </colgroup>
+      <tbody>
+
+        <tr>
+          <td>
+          <button id="ui-toggle-panels-btn" class="btn btn-default btn-lg active" type="button" style="width: 37px; height: 37px; padding: 6px" onclick="UI_Toggle_Panels()">
+            <i class="fa fa-sliders fa-lg"></i>
+<!--            <span class="glyphicon glyphicon-pushpin"></span>-->
+          </button>
+          </td>
+          <td>
+          <div class="input-group">
+            <input id="ui-indicator-time" type="text" value="" class="form-control" readonly="readonly" onfocus="this.blur()" style="background-color:#F8F8F8; height: 37px; text-align: center">
+            <span class="input-group-btn">
+              <button id="ui-play-btn-container" class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onclick="setTimeController({play_mode: !ui_params.play_mode});" onfocus="this.blur()">
+                <span id="ui-play-btn" class="glyphicon glyphicon-play"></span>
+<!--                <i class="fa fa-play fa-lg"></i>-->
+
+              </button>
+            </span>
+          </div>
+          </td>
+          <td style="padding-left: 10px !important; padding-right: 10px !important"><div id="ui-slider-time"></div></td>
+
+          <td>
+          <button class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onclick="saveHistory();" onfocus="this.blur()">
+<!--            <span class="glyphicon glyphicon-bookmark"></span>-->
+            <i class="fa fa-star"></i>
+          </button>
+          </td>
+
+          <td>
+          <div class="input-group">
+            <div id="progress-panel">
+              <div class="progress" style="position: absolute;">
+                <span id="download-progress-text" font-size="13px">--</span>
+                <div id="download-progress-bar" class="progress-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+            <span class="input-group-btn">
+              <button id="ui-lock-btn" class="btn btn-default btn-lg" type="button" style="width: 37px; height: 37px; padding: 6px" onfocus="this.blur()" onclick="UI_Set_Lock({lock_stream: !ui_params.lock_stream})">
+
+                <i id="ui-lock-btn-icon" class="fa fa-unlock-alt fa-lg"></i>
+              </button>
+            </span>
+          </div>
+          </td> 
+        </tr>
+        
+      </tbody>
+      </table>
+    </div>
+
+
+    <div id="load-data-panel" class="hidden resizable-ui">
+      <div class="panel panel-default">
+      <button style="padding:7px" type="button" class="close" onclick="UI_Load_Data_Close()"><span class="glyphicon glyphicon-remove"></span></button>
+      
+        <div class="panel-heading"><h3 class="panel-title">LOAD DATA</h3></div>
+        <br>
+
+        <div id="dataList">
+        </div>
+
+      </div>
+    </div>
+
+    <div id="data-dimensions-panel" class="hidden resizable-ui">
+      <div class="panel panel-default">
+      <button style="padding:7px" type="button" class="close" onclick="UI_Map_Dimension_Close()"><span class="glyphicon glyphicon-remove"></span></button>
+      
+        <div class="panel-heading"><h3 class="panel-title">DATA DIMENSIONS</h3></div>
+        <br>
+
+        <div id="dimensionsList">
+        </div>
+
+      </div>
+    </div>
+
+    <div id="palettes-panel" class="hidden resizable-ui">
+      <div class="panel panel-default">
+      <button style="padding:7px" type="button" class="close" onclick="UI_Load_Palette_Close()"><span class="glyphicon glyphicon-remove"></span></button>
+      
+        <div class="panel-heading"><h3 class="panel-title">COLOR PALETTES</h3></div>
+        <br>
+
+        <div id="palettesList">
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
